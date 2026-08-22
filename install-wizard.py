@@ -15,6 +15,7 @@ der eigentlichen Installation läuft.
 import json
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -79,7 +80,6 @@ def run_checks() -> dict:
 
     def item(name, ok, detail=""):
         c["items"].append({"name": name, "ok": bool(ok), "detail": detail})
-
     py = f"{sys.version_info.major}.{sys.version_info.minor}"
     item("Python", sys.version_info >= (3, 10), f"v{py} gefunden")
     git = _run(["git", "--version"])
@@ -310,23 +310,30 @@ def start_install(body: dict) -> None:
 HTML = """<!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EchoMuse Installation</title>
+<title>EchoMuse Setup</title>
 <style>
 :root{--bg:#14171a;--card:#1d2126;--line:#2b3138;--fg:#e8eaed;
       --dim:#9aa3ac;--green:#43c47a;--amber:#e5b45b;--red:#e06c5b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
   font:15px/1.55 -apple-system,'Segoe UI',Roboto,sans-serif;
   display:flex;justify-content:center;padding:32px 16px}
-main{width:100%;max-width:760px}
+main{width:100%;max-width:780px}
 h1{font-size:22px;margin:0 0 4px}h1 span{color:var(--green)}
-.sub{color:var(--dim);margin-bottom:24px}
+.sub{color:var(--dim);margin-bottom:16px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{flex:1;text-align:center;padding:10px;border:1px solid var(--line);
+  border-radius:10px;cursor:pointer;color:var(--dim)}
+.tab.sel{border-color:var(--green);color:var(--fg)}
+.langs{position:absolute;top:20px;right:20px}
+.langs button{background:none;border:1px solid var(--line);color:var(--dim);
+  border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+.langs button.on{border-color:var(--green);color:var(--green)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
   padding:20px;margin-bottom:16px}
 .step{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
 .num{flex:0 0 26px;height:26px;border-radius:50%;background:var(--line);
   display:flex;align-items:center;justify-content:center;font-weight:700;
-  font-size:13px}
-.num.active{background:var(--green);color:#10241a}
+  font-size:13px}.num.active{background:var(--green);color:#10241a}
 button{background:var(--green);color:#10241a;border:0;border-radius:8px;
   padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
@@ -334,7 +341,7 @@ button.sec{background:var(--line);color:var(--fg)}
 label{display:block;color:var(--dim);font-size:13px;margin:10px 0 4px}
 input{width:100%;background:var(--bg);border:1px solid var(--line);
   border-radius:8px;color:var(--fg);padding:9px 12px;font-size:14px}
-.check{display:flex;justify-content:space-between;padding:6px 0;
+.check{display:flex;justify-content:space-between;gap:10px;padding:6px 0;
   border-bottom:1px solid var(--line)}
 .ok{color:var(--green)}.bad{color:var(--red)}
 pre{background:#101317;border:1px solid var(--line);border-radius:8px;
@@ -348,73 +355,143 @@ pre{background:#101317;border:1px solid var(--line);border-radius:8px;
 .mode.sel{border-color:var(--green)}
 .mode b{display:block}.mode small{color:var(--dim)}
 .hidden{display:none}
+.help{color:var(--dim);font-size:13px;margin:6px 0 10px}
 </style></head><body><main>
-<h1>Echo<span>Muse</span> — Installation</h1>
-<div class="sub">Geführter Assistent · Controller für Echo Dot 2. Gen → Home Assistant</div>
+<div class="langs"><button id="l-de" onclick="setLang('de')">DE</button>
+<button id="l-en" onclick="setLang('en')">EN</button></div>
+<h1>Echo<span>Muse</span> — <span data-i18n="title">Setup</span></h1>
+<div class="sub" data-i18n="subtitle"></div>
 
+<div class="tabs">
+ <div class="tab sel" id="tab-controller" onclick="showTab('c')" data-i18n="tab_controller"></div>
+ <div class="tab" id="tab-dot" onclick="showTab('d')" data-i18n="tab_dot"></div>
+</div>
+
+<div id="page-controller">
 <div class="card">
  <div class="step"><div class="num active">1</div><div style="flex:1">
-  <b>Voraussetzungen</b>
-  <div id="checks"><span class="sub">Prüfe …</span></div>
-  <button id="btn-recheck" class="sec hidden" onclick="recheck()">Erneut prüfen</button>
+  <b data-i18n="prereq"></b>
+  <div id="checks"><span class="sub" data-i18n="checking"></span></div>
+  <button id="btn-recheck" class="sec hidden" onclick="recheck()" data-i18n="recheck"></button>
  </div></div>
 </div>
 
-<div class="card" id="card-mode">
+<div class="card">
  <div class="step"><div class="num">2</div><div style="flex:1;width:100%">
-  <b>Installationsart</b>
+  <b data-i18n="mode_title"></b>
   <div class="mode sel" id="m-native" onclick="pick('native')">
-   <b>Mac nativ starten</b>
-   <small>Zum Testen — venv + Abhängigkeiten, Controller im Vordergrund des Systems</small>
-  </div>
+   <b data-i18n="mode_native"></b>
+   <small data-i18n="mode_native_d"></small></div>
   <div class="mode" id="m-docker" onclick="pick('docker')">
-   <b>Docker-Container</b>
-   <small>Für Dauerbetrieb (Unraid/Mac mit Docker) — baut Image aus diesem Repo inkl. aller Fixes</small>
-  </div>
+   <b data-i18n="mode_docker"></b>
+   <small data-i18n="mode_docker_d"></small></div>
  </div></div>
 </div>
 
-<div class="card" id="card-cfg">
+<div class="card">
  <div class="step"><div class="num">3</div><div style="flex:1;width:100%">
-  <b>Konfiguration</b>
-  <label>Server-IP im LAN (für mDNS)</label>
-  <input id="ip" placeholder="wird automatisch erkannt">
-  <label>mDNS-Name</label>
-  <input id="mdns" value="echomuse">
-  <div id="dd-wrap" class="hidden">
-   <label>Datenverzeichnis (Docker)</label>
-   <input id="datadir" placeholder="standardmäßig neben dem Repo">
-  </div>
-  <br><button id="btn-go" onclick="start()">Installation starten</button>
+  <b data-i18n="cfg_title"></b>
+  <label data-i18n="cfg_ip"></label><input id="ip" placeholder="">
+  <label>mDNS</label><input id="mdns" value="echomuse">
+  <div id="dd-wrap" class="hidden"><label data-i18n="cfg_datadir"></label>
+   <input id="datadir"></div>
+  <br><button id="btn-go" onclick="start()" data-i18n="start_install"></button>
  </div></div>
 </div>
 
 <div class="card hidden" id="card-log">
  <div class="step"><div class="num" id="num4">4</div><div style="flex:1;width:100%">
-  <b>Installation läuft …</b>
-  <pre id="log"></pre>
+  <b data-i18n="installing"></b><pre id="log"></pre>
  </div></div>
 </div>
 
 <div class="card hidden" id="card-done">
- <b>✅ Fertig!</b>
- <p>Dashboard: <a id="dash" style="color:var(--green)" href="#"></a></p>
- <div>Setup-Token (einmalig, für den ersten Admin-Account):</div>
+ <b data-i18n="done"></b>
+ <p><span data-i18n="dashboard"></span> <a id="dash" style="color:var(--green)" href="#"></a></p>
+ <div data-i18n="token_label"></div>
  <div class="token" id="token"></div>
  <div class="sub" id="token-note" style="margin-top:6px"></div>
  <hr style="border-color:var(--line)">
- <b>Nächste Schritte</b>
+ <b data-i18n="next_steps"></b>
  <ol style="color:var(--dim)">
-  <li>Dashboard öffnen, Token eingeben, Admin-Account anlegen</li>
-  <li>Echo Dot per USB an den Laptop → Provisioning-Wizard im Dashboard
-      (einmalig pro Gerät, Details: docs/rooting.md)</li>
-  <li>Gerät approven → erscheint automatisch in Home Assistant (ESPHome);
-      HA braucht eine eingerichtete Assist-Pipeline</li>
-  <li>Wake Word sagen und sprechen 🙂</li>
+  <li data-i18n="ns1"></li><li data-i18n="ns2"></li>
+  <li data-i18n="ns3"></li><li data-i18n="ns4"></li>
  </ol>
 </div>
+</div><!-- /controller -->
 
+<div id="page-dot" class="hidden">
+<div class="card">
+ <p class="help" data-i18n="dot_intro"></p>
+ <button class="sec" onclick="dotChecks()" data-i18n="dot_check_btn"></button>
+ <div id="dot-checks"></div>
+ <h3 style="font-size:15px" data-i18n="dot_files"></h3>
+ <div id="dot-files"></div>
+</div>
+<div class="card">
+ <div class="step"><div class="num active">→</div><div style="flex:1;width:100%">
+  <b data-i18n="dot_launch_title"></b>
+  <p class="help" data-i18n="dot_launch_help"></p>
+  <button onclick="launch('vm-setup')">Linux-VM starten (Unlock)</button>
+  <button class="sec" onclick="launch('dot-guide')" data-i18n="dot_guide_btn"></button>
+ </div></div>
+</div>
+<div class="card">
+ <div class="step"><div class="num">✓</div><div style="flex:1">
+  <b data-i18n="dot_dash_title"></b>
+  <p class="help" data-i18n="dot_dash_help"></p>
+ </div></div>
+</div>
+</div><!-- /dot -->
+</main>
 <script>
+const I18N={
+de:{title:"Setup",subtitle:"Geführter Assistent · Controller für Echo Dot 2. Gen → Home Assistant",
+tab_controller:"🖥 Controller",tab_dot:"🔊 Echo Dot",prereq:"Voraussetzungen",
+checking:"Prüfe …",recheck:"Erneut prüfen",mode_title:"Installationsart",
+mode_native:"Mac nativ starten",mode_native_d:"Zum Testen — venv + Abhängigkeiten",
+mode_docker:"Docker-Container",mode_docker_d:"Für Dauerbetrieb (Unraid/Mac) — baut Image aus diesem Repo inkl. aller Fixes",
+cfg_title:"Konfiguration",cfg_ip:"Server-IP im LAN (für mDNS)",cfg_datadir:"Datenverzeichnis (Docker)",
+start_install:"Installation starten",installing:"Installation läuft …",done:"✅ Fertig!",
+dashboard:"Dashboard:",token_label:"Setup-Token (einmalig, für den ersten Admin-Account):",
+next_steps:"Nächste Schritte",ns1:"Dashboard öffnen, Token eingeben, Admin-Account anlegen",
+ns2:"Echo Dot per USB an den Laptop → Provisioning-Wizard im Dashboard (einmalig pro Gerät)",
+ns3:"Gerät approven → erscheint automatisch in Home Assistant (ESPHome); HA braucht eine Assist-Pipeline",
+ns4:"Wake Word sagen und sprechen 🙂",
+dot_intro:"Begleiter für das Anlernen eines Echo Dot Gen 2. Der Unlock (Bootrom-Exploit) läuft nur unter Linux — auf dem Mac am besten über die mitgelieferte Mini-Linux-VM. Er kann Geräte ruinieren: nur Dots verwenden, die du nicht verlierst.",
+dot_check_btn:"Gerät & Dateien prüfen",dot_files:"Benötigte Dateien",
+dot_launch_title:"Rooten & einrichten",dot_launch_help:"Die VM (Debian mini) startet headless; der Dot wird per USB durchgereicht. dot-guide.py begleitet Unlock, Firmware und Einrichtung Schritt für Schritt.",
+dot_guide_btn:"Dot-Guide starten (Terminal)",dot_dash_title:"Anlernen im Dashboard",
+dot_dash_help:"Nach dem Rooten: Dashboard öffnen → Provisioning → USB freigeben → Wizard-Schritten folgen."},
+en:{title:"Setup",subtitle:"Guided assistant · Controller for Echo Dot 2nd gen → Home Assistant",
+tab_controller:"🖥 Controller",tab_dot:"🔊 Echo Dot",prereq:"Prerequisites",
+checking:"Checking …",recheck:"Check again",mode_title:"Installation type",
+mode_native:"Run natively on this Mac",mode_native_d:"For testing — venv + dependencies",
+mode_docker:"Docker container",mode_docker_d:"For permanent operation (Unraid/Mac) — builds the image from this repo including all fixes",
+cfg_title:"Configuration",cfg_ip:"Server IP on LAN (for mDNS)",cfg_datadir:"Data directory (Docker)",
+start_install:"Start installation",installing:"Installing …",done:"✅ Done!",
+dashboard:"Dashboard:",token_label:"Setup token (one-time, for the first admin account):",
+next_steps:"Next steps",ns1:"Open the dashboard, enter the token, create the admin account",
+ns2:"Connect the Echo Dot via USB → provisioning wizard in the dashboard (once per device)",
+ns3:"Approve the device → appears automatically in Home Assistant (ESPHome); HA needs an Assist pipeline",
+ns4:"Say the wake word and talk 🙂",
+dot_intro:"Companion for setting up an Echo Dot Gen 2. The unlock (bootrom exploit) only runs on Linux — on a Mac use the bundled mini Linux VM. It can ruin devices: only use Dots you can afford to lose.",
+dot_check_btn:"Check device & files",dot_files:"Required files",
+dot_launch_title:"Root & set up",dot_launch_help:"The VM (Debian mini) runs headless; the Dot is passed through over USB. dot-guide.py walks you through unlock, firmware and setup step by step.",
+dot_guide_btn:"Start Dot guide (terminal)",dot_dash_title:"Provision in dashboard",
+dot_dash_help:"After rooting: open dashboard → Provisioning → allow USB → follow the wizard."}};
+let lang=(navigator.language||"de").startsWith("de")?"de":"en";
+function applyLang(){document.querySelectorAll("[data-i18n]").forEach(e=>{
+ const k=e.getAttribute("data-i18n");if(I18N[lang][k])e.textContent=I18N[lang][k];});
+ document.documentElement.lang=lang;
+ document.getElementById("l-de").classList.toggle("on",lang==="de");
+ document.getElementById("l-en").classList.toggle("on",lang==="en");}
+function setLang(l){lang=l;applyLang();}
+function showTab(t){document.getElementById("page-controller").classList.toggle("hidden",t!=="c");
+ document.getElementById("page-dot").classList.toggle("hidden",t!=="d");
+ document.getElementById("tab-controller").classList.toggle("sel",t==="c");
+ document.getElementById("tab-dot").classList.toggle("sel",t==="d");
+ if(t==="d")dotChecks();}
 let mode='native';
 function pick(m){mode=m;
  document.getElementById('m-native').classList.toggle('sel',m==='native');
@@ -428,34 +505,107 @@ async function poll(){
    `<div class="check"><span>${i.name}</span><span class="${i.ok?'ok':'bad'}">${i.detail||''}</span></div>`).join('');
  }
  if(s.phase==='ready'){document.getElementById('btn-recheck').classList.remove('hidden');
-   if(s.checks&&s.checks.lan_ip&&!document.getElementById('ip').value)
-    document.getElementById('ip').value=s.checks.lan_ip;}
+  if(s.checks&&s.checks.lan_ip&&!document.getElementById('ip').value)
+   document.getElementById('ip').value=s.checks.lan_ip;}
  if(s.log){const l=document.getElementById('log');
-  l.textContent=s.log.join('\\n');l.scrollTop=l.scrollHeight;}
+  l.textContent=s.log.join('\n');l.scrollTop=l.scrollHeight;}
  const running=s.phase==='installing'||s.phase==='checking';
  document.getElementById('btn-go').disabled=running;
  document.getElementById('card-log').classList.toggle('hidden',
-   !['installing','running'].includes(s.phase)||!s.log.length);
+  !['installing','running'].includes(s.phase)||!s.log.length);
  if(s.phase==='running'&&s.result&&s.result.dashboard_url){
   document.getElementById('card-done').classList.remove('hidden');
   const d=document.getElementById('dash');d.textContent=s.result.dashboard_url;
   d.href=s.result.dashboard_url;
-  document.getElementById('token').textContent=s.result.token||
-   '(siehe Hinweis)';document.getElementById('token-note').textContent=
-   s.result.token_note||'';
- }
- setTimeout(poll,1200);
-}
+  document.getElementById('token').textContent=s.result.token||'—';
+  document.getElementById('token-note').textContent=s.result.token_note||'';}
+ setTimeout(poll,1200);}
 async function recheck(){await fetch('/api/checks',{method:'POST'});setTimeout(poll,300);}
 async function start(){
- const body={mode,server_ip:document.getElementById('ip').value,
-  mdns_name:document.getElementById('mdns').value,
-  data_dir:document.getElementById('datadir').value};
- await fetch('/api/start',{method:'POST',
-  headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
- poll();}
-(async()=>{await fetch('/api/checks',{method:'POST'});poll();})();
-</script></body></html>"""
+ await fetch('/api/start',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({mode,server_ip:document.getElementById('ip').value,
+   mdns_name:document.getElementById('mdns').value,
+   data_dir:document.getElementById('datadir').value})});poll();}
+async function dotChecks(){
+ const d=await(await fetch('/api/dot-checks',{method:'POST'})).json();
+ document.getElementById('dot-checks').innerHTML=d.items.map(i=>
+  `<div class="check"><span>${i.name}</span><span class="${i.ok?'ok':'bad'}">${i.detail||''}</span></div>`).join('');
+ document.getElementById('dot-files').innerHTML=d.files.map(f=>
+  `<div class="check"><span>${f.name}<br><small class="sub">${f.why}</small></span><span class="${f.ok?'ok':'bad'}">${f.ok?'✓':'✗'}</span></div>`).join('')||`<span class="sub">—</span>`;}
+async function launch(t){await fetch('/api/launch',{method:'POST',
+ headers:{'Content-Type':'application/json'},body:JSON.stringify({target:t})});}
+(async()=>{applyLang();await fetch('/api/checks',{method:'POST'});poll();})();
+</script></body></html>
+"""
+
+
+# ── Dot-Checks (Echo-Dot-Reiter) ──────────────────────────────────────────────
+REQUIRED_FILES = [
+    ("amonet-biscuit-v1.1.0.zip", "XDA thread (unlock/root/TWRP)"),
+    ("update-kindle-csm_biscuit-272.6.8.0_user_680767620.bin",
+     "FireOS 5.5.5.4 - the tested reference build"),
+    ("f1r30s.zip", "XDA thread - ADB+UART, OTA blocker, dm-verity off"),
+    ("Magisk-v17.3.zip", "github.com/topjohnwu/Magisk/releases/tag/v17.3"),
+]
+EXPECTED_BUILD = "272.6.8.0_user_680767620"
+
+
+def run_dot_checks() -> dict:
+    r = {"items": [], "files": []}
+
+    def sh(cmd):
+        try:
+            return subprocess.run(cmd, capture_output=True, text=True,
+                                  timeout=15)
+        except Exception:
+            return None
+
+    adb = sh(["adb", "version"])
+    r["items"].append({"name": "adb", "ok": adb is not None,
+                       "detail": adb.stdout.splitlines()[0] if adb else "missing"})
+    dev = sh(["adb", "devices"])
+    serials = [l.split("\t")[0] for l in (dev.stdout or "").splitlines()[1:]
+               if "\tdevice" in l] if dev else []
+    r["items"].append({"name": "device", "ok": bool(serials),
+                       "detail": serials[0] if serials else "none attached"})
+    if serials:
+        prop = sh(["adb", "shell", "getprop", "ro.build.version.name"])
+        build = (prop.stdout or "").strip() if prop else ""
+        r["items"].append({"name": "FireOS build", "ok": EXPECTED_BUILD in build,
+                           "detail": build or "unknown"})
+    search = [os.getcwd(), str(Path.home() / "Downloads"), str(REPO_DIR)]
+    for fname, why in REQUIRED_FILES:
+        found = next((d for d in search
+                      if os.path.exists(os.path.join(d, fname))), None)
+        r["files"].append({"name": fname, "why": why,
+                           "ok": bool(found), "dir": found or ""})
+    return r
+
+
+def launch_in_terminal(script: str) -> tuple:
+    """Öffnet script in einem neuen Terminalfenster des jeweiligen OS."""
+    plat = sys.platform
+    try:
+        if plat == "darwin":
+            apple = (f'tell app "Terminal" to do script '
+                     f'"cd {REPO_DIR} && python3 {script}; exec bash"')
+            subprocess.Popen(["osascript", "-e", apple])
+        elif plat == "win32":
+            subprocess.Popen(["cmd", "/c", "start", "cmd", "/k",
+                              f"cd /d {REPO_DIR} && python3 {script}"])
+        else:
+            for term in ("x-terminal-emulator", "gnome-terminal", "xterm"):
+                if shutil.which(term):
+                    args = ([term, "-e"] if term != "gnome-terminal"
+                            else [term, "--"]) + \
+                           [f"bash -c 'cd {REPO_DIR} && python3 {script}; exec bash'"]
+                    subprocess.Popen(args)
+                    break
+            else:
+                return False, "no terminal emulator found"
+        return True, "launched"
+    except Exception as e:
+        return False, str(e)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -492,11 +642,28 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/api/start":
             start_install(body)
             self._send(202, "{}")
+        elif self.path == "/api/dot-checks":
+            self._send(200, json.dumps(run_dot_checks()))
+        elif self.path == "/api/launch":
+            self._send(200, _api_launch(body))
         else:
             self._send(404, "{}")
 
-    def log_message(self, *a):  # ruhig halten
+    def log_message(self, *a):  # keep the console quiet
         pass
+
+
+def _api_launch(body):
+    target = body.get("target", "")
+    if target == "dot-guide":
+        ok_, msg = launch_in_terminal("dot-guide.py")
+    elif target == "vm-setup":
+        ok_, msg = launch_in_terminal("vm-unlock.sh setup")
+    elif target == "controller-guide":
+        ok_, msg = launch_in_terminal("guided-install.sh")
+    else:
+        return {"ok": False, "msg": "unknown target"}
+    return {"ok": ok_, "msg": msg}
 
 
 def main():
