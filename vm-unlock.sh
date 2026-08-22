@@ -40,8 +40,10 @@ cmd_setup(){
 
   mkdir -p "$VM_DIR"
   say "Schritt 2: Debian-12-Cloud-Image laden (~400 MB)…"
-  [ -f "$DISK" ] || curl -fL --progress-bar -o "$DISK.part" "$IMG_URL" \
-    && mv "$DISK.part" "$DISK"
+  if [ ! -f "$DISK" ]; then
+    curl -fL --progress-bar -o "$DISK.part" "$IMG_URL"
+    mv "$DISK.part" "$DISK"
+  fi
   ok "$(basename "$DISK"): $(du -h "$DISK" | cut -f1)"
 
   say "Schritt 3: Cloud-Init konfigurieren (User 'echomuse', SSH-Key, Pakete)…"
@@ -60,6 +62,9 @@ users:
     shell: /bin/bash
     ssh_authorized_keys:
       - $PUBKEY
+    password: echomuse
+    lock_passwd: false
+ssh_pwauth: true
 packages: [adb, fastboot, unzip, git, python3, usbutils]
 runcmd:
   - echo -1 > /sys/bus/usb/devices/*/power/autosuspend || true
@@ -70,9 +75,12 @@ EOF
   echo "instance-id: echomuse-$(date +%s)" > "$VM_DIR/meta-data"
   # seed.iso ohne Zusatzpakete bauen — hdiutil ist auf macOS vorhanden
   TMPD=$(mktemp -d); cp "$VM_DIR/user-data" "$TMPD/"; cp "$VM_DIR/meta-data" "$TMPD/"
-  hdiutil makehybrid -iso -joliet -default-volume-name cidata \
-     -o "$SEED" "$TMPD" >/dev/null && rm -rf "$TMPD"
-  ok "seed.iso erstellt"
+  ok "seed-Dateien erstellt (HTTP-Datasource)"
+  # Datasource per SMBIOS übergeben; Dateien serviert ein Mini-HTTP-Server
+  # vom Mac (Gast erreicht den Host unter 10.0.2.2). Robuster als die
+  # CD-Variante, deren Label-Erkennung je nach Image variiert.
+  (cd "$VM_DIR" && nohup python3 -m http.server 8069 --bind 0.0.0.0 \
+     >/dev/null 2>&1 & echo $! > "$VM_DIR/http.pid")
 
   say "Schritt 4: Disk vergrößern (8 GB)…"
   qemu-img resize -q "$DISK" 8G 2>/dev/null || true
@@ -83,10 +91,13 @@ EOF
     -machine q35 -accel hvf -cpu host \
     -m 2048 -smp 2 \
     -drive file="$DISK",if=virtio,format=qcow2 \
-    -drive file="$SEED",media=cdrom,readonly=on \
+    -smbios 'type=1,serial=ds=nocloud-net;s=http://10.0.2.2:8069/' \
+    -drive if=pflash,format=raw,file=/usr/local/share/qemu/edk2-x86_64-code.fd,readonly=on \
     -device qemu-xhci,id=xhci \
     -netdev user,id=n0,hostfwd=tcp::${SSH_PORT}-:22 \
     -device virtio-net-pci,netdev=n0 \
+    -chardev socket,id=ser0,path="$VM_DIR/serial.sock",server=on,wait=off \
+    -serial chardev:ser0 \
     -display none -daemonize \
     -monitor unix:"$MON",server,nowait \
     -pidfile "$VM_DIR/qemu.pid"
@@ -96,12 +107,14 @@ EOF
   for i in $(seq 1 60); do
     sleep 10
     if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes \
-         -p $SSH_PORT echomuse@localhost "test -e /var/lib/cloud/instance/boot-finished" 2>/dev/null; then
+         -p $SSH_PORT echomuse@localhost "echo LOGIN-OK" 2>/dev/null | grep -q LOGIN-OK; then
       ok "VM bereit! SSH: ssh -p $SSH_PORT echomuse@localhost"
+      # Cloud-Init darf Pakete noch installieren — kurz nachziehen
+      sleep 20
       cmd_attach_hint
       return
     fi
-    echo "  … noch nicht bereit (${i}/6 min)"
+    echo "  … noch nicht bereit (${i}/10 min)"
   done
   warn "Timeout beim Warten — Status mit './vm-unlock.sh status' prüfen."
 }

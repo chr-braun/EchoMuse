@@ -313,228 +313,221 @@ HTML = """<!doctype html>
 <title>EchoMuse Setup</title>
 <style>
 :root{--bg:#14171a;--card:#1d2126;--line:#2b3138;--fg:#e8eaed;
-      --dim:#9aa3ac;--green:#43c47a;--amber:#e5b45b;--red:#e06c5b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
-  font:15px/1.55 -apple-system,'Segoe UI',Roboto,sans-serif;
-  display:flex;justify-content:center;padding:32px 16px}
-main{width:100%;max-width:780px}
-h1{font-size:22px;margin:0 0 4px}h1 span{color:var(--green)}
-.sub{color:var(--dim);margin-bottom:16px}
+ --dim:#9aa3ac;--green:#43c47a;--red:#e06c5b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:15px/1.55 -apple-system,'Segoe UI',Roboto,sans-serif;
+ display:flex;justify-content:center;padding:28px 16px}
+main{width:100%;max-width:760px}
+h1{font-size:22px;margin:0}
+h1 span{color:var(--green)}
+.sub{color:var(--dim);margin:4px 0 18px}
+.top{display:flex;justify-content:space-between;align-items:flex-start}
+.langs button{background:none;border:1px solid var(--line);color:var(--dim);
+ border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;margin-left:4px}
+.langs button.on{border-color:var(--green);color:var(--green)}
 .tabs{display:flex;gap:8px;margin-bottom:16px}
 .tab{flex:1;text-align:center;padding:10px;border:1px solid var(--line);
-  border-radius:10px;cursor:pointer;color:var(--dim)}
+ border-radius:10px;cursor:pointer;color:var(--dim)}
 .tab.sel{border-color:var(--green);color:var(--fg)}
-.langs{position:absolute;top:20px;right:20px}
-.langs button{background:none;border:1px solid var(--line);color:var(--dim);
-  border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
-.langs button.on{border-color:var(--green);color:var(--green)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
-  padding:20px;margin-bottom:16px}
-.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+ padding:20px;margin-bottom:14px}
+.step{display:flex;gap:12px;align-items:flex-start}
 .num{flex:0 0 26px;height:26px;border-radius:50%;background:var(--line);
-  display:flex;align-items:center;justify-content:center;font-weight:700;
-  font-size:13px}.num.active{background:var(--green);color:#10241a}
+ display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.num.active{background:var(--green);color:#10241a}
+.step>div:last-child{flex:1}
 button{background:var(--green);color:#10241a;border:0;border-radius:8px;
-  padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer}
+ padding:9px 16px;font-weight:700;font-size:14px;cursor:pointer;margin-top:8px}
+button:hover:not(:disabled){filter:brightness(1.1)}
 button:disabled{opacity:.45;cursor:default}
 button.sec{background:var(--line);color:var(--fg)}
 label{display:block;color:var(--dim);font-size:13px;margin:10px 0 4px}
 input{width:100%;background:var(--bg);border:1px solid var(--line);
-  border-radius:8px;color:var(--fg);padding:9px 12px;font-size:14px}
-.check{display:flex;justify-content:space-between;gap:10px;padding:6px 0;
-  border-bottom:1px solid var(--line)}
+ border-radius:8px;color:var(--fg);padding:9px 12px;font-size:14px}
+.check{display:flex;justify-content:space-between;gap:10px;padding:5px 0;
+ border-bottom:1px solid var(--line);font-size:14px}
+.check small{color:var(--dim)}
 .ok{color:var(--green)}.bad{color:var(--red)}
 pre{background:#101317;border:1px solid var(--line);border-radius:8px;
-  padding:12px;max-height:260px;overflow:auto;font-size:12px;line-height:1.5;
-  white-space:pre-wrap;word-break:break-all}
+ padding:12px;max-height:240px;overflow:auto;font-size:12px;line-height:1.45;
+ white-space:pre-wrap;word-break:break-all}
 .token{background:#10241a;border:1px solid var(--green);border-radius:8px;
-  padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:15px;
-  word-break:break-all;margin-top:8px}
-.mode{border:1px solid var(--line);border-radius:10px;padding:14px;
-  cursor:pointer;margin-bottom:10px}
+ padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:15px;
+ word-break:break-all;margin:8px 0}
+.mode{border:1px solid var(--line);border-radius:10px;padding:12px;
+ cursor:pointer;margin-bottom:10px}
 .mode.sel{border-color:var(--green)}
 .mode b{display:block}.mode small{color:var(--dim)}
 .hidden{display:none}
-.help{color:var(--dim);font-size:13px;margin:6px 0 10px}
+.help{color:var(--dim);font-size:13px;margin:6px 0 12px;line-height:1.5}
+ol.help li{margin-bottom:6px}
+h3{font-size:15px;margin:16px 0 8px}
 </style></head><body><main>
-<div class="langs"><button id="l-de" onclick="setLang('de')">DE</button>
-<button id="l-en" onclick="setLang('en')">EN</button></div>
-<h1>Echo<span>Muse</span> — <span data-i18n="title">Setup</span></h1>
-<div class="sub" data-i18n="subtitle"></div>
+<div class="top">
+ <div><h1>Echo<span>Muse</span> Setup</h1>
+ <div class="sub" data-de="Geführter Assistent · Controller für Echo Dot 2. Gen → Home Assistant"
+      data-en="Guided assistant · Controller for Echo Dot 2nd gen → Home Assistant">Geführter Assistent · Controller für Echo Dot 2. Gen → Home Assistant</div></div>
+ <div class="langs"><button id="l-de" onclick="setLang('de')">DE</button><button id="l-en" onclick="setLang('en')">EN</button></div>
+</div>
 
 <div class="tabs">
- <div class="tab sel" id="tab-controller" onclick="showTab('c')" data-i18n="tab_controller"></div>
- <div class="tab" id="tab-dot" onclick="showTab('d')" data-i18n="tab_dot"></div>
+ <div class="tab sel" id="tab-c" onclick="showTab('c')" data-de="🖥 Controller" data-en="🖥 Controller">🖥 Controller</div>
+ <div class="tab" id="tab-d" onclick="showTab('d')" data-de="🔊 Echo Dot anlernen" data-en="🔊 Set up Echo Dot">🔊 Echo Dot anlernen</div>
 </div>
 
-<div id="page-controller">
+<!-- ═══════════ CONTROLLER ═══════════ -->
+<div id="page-c">
 <div class="card">
- <div class="step"><div class="num active">1</div><div style="flex:1">
-  <b data-i18n="prereq"></b>
-  <div id="checks"><span class="sub" data-i18n="checking"></span></div>
-  <button id="btn-recheck" class="sec hidden" onclick="recheck()" data-i18n="recheck"></button>
+ <div class="step"><div class="num active">1</div><div>
+  <b data-de="Voraussetzungen" data-en="Prerequisites">Voraussetzungen</b>
+  <div id="checks"><span class="sub" data-de="Prüfe …" data-en="Checking …">Prüfe …</span></div>
+  <button id="btn-recheck" class="sec hidden" onclick="recheck()" data-de="Erneut prüfen" data-en="Check again">Erneut prüfen</button>
  </div></div>
 </div>
 
 <div class="card">
- <div class="step"><div class="num">2</div><div style="flex:1;width:100%">
-  <b data-i18n="mode_title"></b>
+ <div class="step"><div class="num">2</div><div style="flex:1">
+  <b data-de="Installationsart" data-en="Installation type">Installationsart</b>
   <div class="mode sel" id="m-native" onclick="pick('native')">
-   <b data-i18n="mode_native"></b>
-   <small data-i18n="mode_native_d"></small></div>
+   <b data-de="Nativ auf diesem Rechner" data-en="Natively on this machine">Nativ auf diesem Rechner</b>
+   <small data-de="Zum Testen — virtuelle Umgebung + Abhängigkeiten, Controller läuft direkt" data-en="For testing — virtual environment + dependencies, controller runs directly">Zum Testen — virtuelle Umgebung + Abhängigkeiten, Controller läuft direkt</small></div>
   <div class="mode" id="m-docker" onclick="pick('docker')">
-   <b data-i18n="mode_docker"></b>
-   <small data-i18n="mode_docker_d"></small></div>
+   <b>Docker</b>
+   <small data-de="Für Dauerbetrieb (Unraid/Mac/Linux) — baut das Image aus diesem Repo inklusive aller lokalen Fixes" data-en="For permanent use (Unraid/Mac/Linux) — builds the image from this repo including all local fixes">Für Dauerbetrieb (Unraid/Mac/Linux) — baut das Image aus diesem Repo inklusive aller lokalen Fixes</small></div>
  </div></div>
 </div>
 
 <div class="card">
- <div class="step"><div class="num">3</div><div style="flex:1;width:100%">
-  <b data-i18n="cfg_title"></b>
-  <label data-i18n="cfg_ip"></label><input id="ip" placeholder="">
-  <label>mDNS</label><input id="mdns" value="echomuse">
-  <div id="dd-wrap" class="hidden"><label data-i18n="cfg_datadir"></label>
+ <div class="step"><div class="num">3</div><div style="flex:1">
+  <b data-de="Konfiguration" data-en="Configuration">Konfiguration</b>
+  <label data-de="Server-IP im LAN (wird über mDNS beworben)" data-en="Server IP on LAN (advertised via mDNS)">Server-IP im LAN (wird über mDNS beworben)</label>
+  <input id="ip" placeholder="">
+  <label>mDNS-Name</label><input id="mdns" value="echomuse">
+  <div id="dd-wrap" class="hidden">
+   <label data-de="Datenverzeichnis (Docker)" data-en="Data directory (Docker)">Datenverzeichnis (Docker)</label>
    <input id="datadir"></div>
-  <br><button id="btn-go" onclick="start()" data-i18n="start_install"></button>
+  <button id="btn-go" onclick="start()" data-de="Installation starten" data-en="Start installation">Installation starten</button>
  </div></div>
 </div>
 
 <div class="card hidden" id="card-log">
- <div class="step"><div class="num" id="num4">4</div><div style="flex:1;width:100%">
-  <b data-i18n="installing"></b><pre id="log"></pre>
+ <div class="step"><div class="num" id="num4">4</div><div style="flex:1">
+  <b data-de="Installation läuft …" data-en="Installing …">Installation läuft …</b>
+  <pre id="log"></pre>
  </div></div>
 </div>
 
 <div class="card hidden" id="card-done">
- <b data-i18n="done"></b>
- <p><span data-i18n="dashboard"></span> <a id="dash" style="color:var(--green)" href="#"></a></p>
- <div data-i18n="token_label"></div>
+ <b data-de="✅ Fertig!" data-en="✅ Done!">✅ Fertig!</b>
+ <p><span data-de="Dashboard:" data-en="Dashboard:">Dashboard:</span> <a id="dash" style="color:var(--green)" href="#"></a></p>
+ <div data-de="Setup-Token (einmalig, für den ersten Admin-Account):" data-en="Setup token (one-time, for the first admin account):">Setup-Token (einmalig, für den ersten Admin-Account):</div>
  <div class="token" id="token"></div>
- <div class="sub" id="token-note" style="margin-top:6px"></div>
+ <div class="sub" id="token-note"></div>
  <hr style="border-color:var(--line)">
- <b data-i18n="next_steps"></b>
- <ol style="color:var(--dim)">
-  <li data-i18n="ns1"></li><li data-i18n="ns2"></li>
-  <li data-i18n="ns3"></li><li data-i18n="ns4"></li>
+ <b data-de="Nächste Schritte" data-en="Next steps">Nächste Schritte</b>
+ <ol class="help">
+  <li data-de="Dashboard öffnen, Token eingeben, Admin-Konto anlegen" data-en="Open the dashboard, enter the token, create the admin account">Dashboard öffnen, Token eingeben, Admin-Konto anlegen</li>
+  <li data-de="Echo Dot per USB an den Laptop → Provisioning-Wizard im Dashboard (einmalig pro Gerät)" data-en="Connect the Dot via USB → provisioning wizard in the dashboard (once per device)">Echo Dot per USB an den Laptop → Provisioning-Wizard im Dashboard (einmalig pro Gerät)</li>
+  <li data-de="Gerät approven → erscheint automatisch in Home Assistant; HA braucht eine eingerichtete Assist-Pipeline" data-en="Approve the device → appears automatically in Home Assistant; HA needs a configured Assist pipeline">Gerät approven → erscheint automatisch in Home Assistant; HA braucht eine eingerichtete Assist-Pipeline</li>
+  <li data-de="Wake Word sagen und sprechen 🙂" data-en="Say the wake word and talk 🙂">Wake Word sagen und sprechen 🙂</li>
  </ol>
 </div>
-</div><!-- /controller -->
+</div>
 
-<div id="page-dot" class="hidden">
+<!-- ═══════════ ECHO DOT ═══════════ -->
+<div id="page-d" class="hidden">
 <div class="card">
- <p class="help" data-i18n="dot_intro"></p>
- <button class="sec" onclick="dotChecks()" data-i18n="dot_check_btn"></button>
+ <p class="help" data-de="Dieser Abschnitt begleitet das Anlernen eines Echo Dot Gen 2. Wichtig vorab: Der Unlock (Bootrom-Exploit) läuft NUR unter Linux — auf dem Mac stellt dieser Assistent eine Mini-Linux-VM bereit. Er löscht das Gerät und kann es im Fehlerfall ruinieren: nur Dots verwenden, die du nicht verlierst." data-en="This section walks you through setting up an Echo Dot Gen 2. Important: the unlock (bootrom exploit) ONLY runs on Linux — on a Mac this assistant provides a mini Linux VM. It wipes the device and can ruin it on failure: only use Dots you can afford to lose.">Dieser Abschnitt begleitet das Anlernen eines Echo Dot Gen 2. Wichtig vorab: Der Unlock (Bootrom-Exploit) läuft NUR unter Linux — auf dem Mac stellt dieser Assistent eine Mini-Linux-VM bereit. Er löscht das Gerät und kann es im Fehlerfall ruinieren: nur Dots verwenden, die du nicht verlierst.</p>
+ <button class="sec" onclick="dotChecks()" data-de="Gerät & Dateien prüfen" data-en="Check device & files">Gerät & Dateien prüfen</button>
  <div id="dot-checks"></div>
- <h3 style="font-size:15px" data-i18n="dot_files"></h3>
- <div id="dot-files"></div>
+ <h3 data-de="Benötigte Dateien" data-en="Required files">Benötigte Dateien</h3>
+ <div id="dot-files"><span class="help" data-de="Noch nicht geprüft." data-en="Not checked yet.">Noch nicht geprüft.</span></div>
 </div>
 <div class="card">
- <div class="step"><div class="num active">→</div><div style="flex:1;width:100%">
-  <b data-i18n="dot_launch_title"></b>
-  <p class="help" data-i18n="dot_launch_help"></p>
-  <button onclick="launch('vm-setup')">Linux-VM starten (Unlock)</button>
-  <button class="sec" onclick="launch('dot-guide')" data-i18n="dot_guide_btn"></button>
+ <div class="step"><div class="num active">→</div><div>
+  <b data-de="Rooten & einrichten" data-en="Root & set up">Rooten & einrichten</b>
+  <p class="help" data-de="Schritt für Schritt: Unlock per brick.sh (nur Linux/VM), Firmware-Sideload, f1r30s-Pflicht-Flash, dann Übergabe ans Dashboard. Der Guide öffnet sich im Terminal und fragt jeden Schritt ab." data-en="Step by step: unlock via brick.sh (Linux/VM only), firmware sideload, mandatory f1r30s flash, then handover to the dashboard. The guide opens in a terminal and confirms every step.">Schritt für Schritt: Unlock per brick.sh (nur Linux/VM), Firmware-Sideload, f1r30s-Pflicht-Flash, dann Übergabe ans Dashboard. Der Guide öffnet sich im Terminal und fragt jeden Schritt ab.</p>
+  <button id="btn-vm" onclick="launch('vm-setup')">1. Linux-VM starten <small>(Unlock)</small></button><br>
+  <button class="sec" onclick="launch('dot-guide')">2. Dot-Guide <small data-de="(Terminal)" data-en="(terminal)">(Terminal)</small></button>
  </div></div>
 </div>
 <div class="card">
- <div class="step"><div class="num">✓</div><div style="flex:1">
-  <b data-i18n="dot_dash_title"></b>
-  <p class="help" data-i18n="dot_dash_help"></p>
+ <div class="step"><div class="num">✓</div><div>
+  <b data-de="Im Dashboard anlernen" data-en="Provision in the dashboard">Im Dashboard anlernen</b>
+  <p class="help" data-de="Nach dem Rooten: Dashboard öffnen → Provisioning → USB-Freigabe für den Dot erteilen (Chrome/Edge) → den Wizard-Schritten folgen. Danach erscheint der Dot in Home Assistant." data-en="After rooting: open the dashboard → Provisioning → grant USB access (Chrome/Edge) → follow the wizard. Afterwards the Dot appears in Home Assistant.">Nach dem Rooten: Dashboard öffnen → Provisioning → USB-Freigabe für den Dot erteilen (Chrome/Edge) → den Wizard-Schritten folgen. Danach erscheint der Dot in Home Assistant.</p>
  </div></div>
 </div>
-</div><!-- /dot -->
+</div>
 </main>
 <script>
-const I18N={
-de:{title:"Setup",subtitle:"Geführter Assistent · Controller für Echo Dot 2. Gen → Home Assistant",
-tab_controller:"🖥 Controller",tab_dot:"🔊 Echo Dot",prereq:"Voraussetzungen",
-checking:"Prüfe …",recheck:"Erneut prüfen",mode_title:"Installationsart",
-mode_native:"Mac nativ starten",mode_native_d:"Zum Testen — venv + Abhängigkeiten",
-mode_docker:"Docker-Container",mode_docker_d:"Für Dauerbetrieb (Unraid/Mac) — baut Image aus diesem Repo inkl. aller Fixes",
-cfg_title:"Konfiguration",cfg_ip:"Server-IP im LAN (für mDNS)",cfg_datadir:"Datenverzeichnis (Docker)",
-start_install:"Installation starten",installing:"Installation läuft …",done:"✅ Fertig!",
-dashboard:"Dashboard:",token_label:"Setup-Token (einmalig, für den ersten Admin-Account):",
-next_steps:"Nächste Schritte",ns1:"Dashboard öffnen, Token eingeben, Admin-Account anlegen",
-ns2:"Echo Dot per USB an den Laptop → Provisioning-Wizard im Dashboard (einmalig pro Gerät)",
-ns3:"Gerät approven → erscheint automatisch in Home Assistant (ESPHome); HA braucht eine Assist-Pipeline",
-ns4:"Wake Word sagen und sprechen 🙂",
-dot_intro:"Begleiter für das Anlernen eines Echo Dot Gen 2. Der Unlock (Bootrom-Exploit) läuft nur unter Linux — auf dem Mac am besten über die mitgelieferte Mini-Linux-VM. Er kann Geräte ruinieren: nur Dots verwenden, die du nicht verlierst.",
-dot_check_btn:"Gerät & Dateien prüfen",dot_files:"Benötigte Dateien",
-dot_launch_title:"Rooten & einrichten",dot_launch_help:"Die VM (Debian mini) startet headless; der Dot wird per USB durchgereicht. dot-guide.py begleitet Unlock, Firmware und Einrichtung Schritt für Schritt.",
-dot_guide_btn:"Dot-Guide starten (Terminal)",dot_dash_title:"Anlernen im Dashboard",
-dot_dash_help:"Nach dem Rooten: Dashboard öffnen → Provisioning → USB freigeben → Wizard-Schritten folgen."},
-en:{title:"Setup",subtitle:"Guided assistant · Controller for Echo Dot 2nd gen → Home Assistant",
-tab_controller:"🖥 Controller",tab_dot:"🔊 Echo Dot",prereq:"Prerequisites",
-checking:"Checking …",recheck:"Check again",mode_title:"Installation type",
-mode_native:"Run natively on this Mac",mode_native_d:"For testing — venv + dependencies",
-mode_docker:"Docker container",mode_docker_d:"For permanent operation (Unraid/Mac) — builds the image from this repo including all fixes",
-cfg_title:"Configuration",cfg_ip:"Server IP on LAN (for mDNS)",cfg_datadir:"Data directory (Docker)",
-start_install:"Start installation",installing:"Installing …",done:"✅ Done!",
-dashboard:"Dashboard:",token_label:"Setup token (one-time, for the first admin account):",
-next_steps:"Next steps",ns1:"Open the dashboard, enter the token, create the admin account",
-ns2:"Connect the Echo Dot via USB → provisioning wizard in the dashboard (once per device)",
-ns3:"Approve the device → appears automatically in Home Assistant (ESPHome); HA needs an Assist pipeline",
-ns4:"Say the wake word and talk 🙂",
-dot_intro:"Companion for setting up an Echo Dot Gen 2. The unlock (bootrom exploit) only runs on Linux — on a Mac use the bundled mini Linux VM. It can ruin devices: only use Dots you can afford to lose.",
-dot_check_btn:"Check device & files",dot_files:"Required files",
-dot_launch_title:"Root & set up",dot_launch_help:"The VM (Debian mini) runs headless; the Dot is passed through over USB. dot-guide.py walks you through unlock, firmware and setup step by step.",
-dot_guide_btn:"Start Dot guide (terminal)",dot_dash_title:"Provision in dashboard",
-dot_dash_help:"After rooting: open dashboard → Provisioning → allow USB → follow the wizard."}};
-let lang=(navigator.language||"de").startsWith("de")?"de":"en";
-function applyLang(){document.querySelectorAll("[data-i18n]").forEach(e=>{
- const k=e.getAttribute("data-i18n");if(I18N[lang][k])e.textContent=I18N[lang][k];});
+var LANGS={de:{},en:{}};
+function t(el){var v=el.getAttribute(lang==="en"?"data-en":"data-de");
+ if(v!==null&&v!==undefined)el.textContent=v;}
+function applyLang(){
+ document.querySelectorAll("[data-de]").forEach(t);
  document.documentElement.lang=lang;
  document.getElementById("l-de").classList.toggle("on",lang==="de");
  document.getElementById("l-en").classList.toggle("on",lang==="en");}
+var lang=(navigator.language||"de").slice(0,2)==="de"?"de":"en";
 function setLang(l){lang=l;applyLang();}
-function showTab(t){document.getElementById("page-controller").classList.toggle("hidden",t!=="c");
- document.getElementById("page-dot").classList.toggle("hidden",t!=="d");
- document.getElementById("tab-controller").classList.toggle("sel",t==="c");
- document.getElementById("tab-dot").classList.toggle("sel",t==="d");
+applyLang();
+
+function showTab(t){
+ document.getElementById("page-c").classList.toggle("hidden",t!=="c");
+ document.getElementById("page-d").classList.toggle("hidden",t!=="d");
+ document.getElementById("tab-c").classList.toggle("sel",t==="c");
+ document.getElementById("tab-d").classList.toggle("sel",t==="d");
  if(t==="d")dotChecks();}
-let mode='native';
+
+var mode="native";
 function pick(m){mode=m;
- document.getElementById('m-native').classList.toggle('sel',m==='native');
- document.getElementById('m-docker').classList.toggle('sel',m==='docker');
- document.getElementById('dd-wrap').classList.toggle('hidden',m!=='docker');}
+ document.getElementById("m-native").classList.toggle("sel",m==="native");
+ document.getElementById("m-docker").classList.toggle("sel",m==="docker");
+ document.getElementById("dd-wrap").classList.toggle("hidden",m!=="docker");}
+
 async function poll(){
- const s=await(await fetch('/api/state')).json();
- const cl=document.getElementById('checks');
+ try{
+ var s=await(await fetch("/api/state")).json();
+ var cl=document.getElementById("checks");
  if(s.checks){
-  cl.innerHTML=s.checks.items.map(i=>
-   `<div class="check"><span>${i.name}</span><span class="${i.ok?'ok':'bad'}">${i.detail||''}</span></div>`).join('');
+  cl.innerHTML=s.checks.items.map(function(i){
+   return "<div class='check'><span>"+i.name+"</span><span class='"+(i.ok?"ok":"bad")+"'>"+esc(i.detail||"")+"</span></div>";}).join("");
  }
- if(s.phase==='ready'){document.getElementById('btn-recheck').classList.remove('hidden');
-  if(s.checks&&s.checks.lan_ip&&!document.getElementById('ip').value)
-   document.getElementById('ip').value=s.checks.lan_ip;}
- if(s.log){const l=document.getElementById('log');
-  l.textContent=s.log.join('\n');l.scrollTop=l.scrollHeight;}
- const running=s.phase==='installing'||s.phase==='checking';
- document.getElementById('btn-go').disabled=running;
- document.getElementById('card-log').classList.toggle('hidden',
-  !['installing','running'].includes(s.phase)||!s.log.length);
- if(s.phase==='running'&&s.result&&s.result.dashboard_url){
-  document.getElementById('card-done').classList.remove('hidden');
-  const d=document.getElementById('dash');d.textContent=s.result.dashboard_url;
-  d.href=s.result.dashboard_url;
-  document.getElementById('token').textContent=s.result.token||'—';
-  document.getElementById('token-note').textContent=s.result.token_note||'';}
+ if(s.phase==="ready"){
+  document.getElementById("btn-recheck").classList.remove("hidden");
+  if(s.checks&&s.checks.lan_ip&&!document.getElementById("ip").value)
+   document.getElementById("ip").value=s.checks.lan_ip;}
+ if(s.log&&s.log.length){
+  document.getElementById("card-log").classList.remove("hidden");
+  var l=document.getElementById("log");
+  l.textContent=s.log.join("\u000A");l.scrollTop=l.scrollHeight;}
+ document.getElementById("btn-go").disabled=(s.phase==="installing"||s.phase==="checking");
+ if(s.phase==="running"&&s.result&&s.result.dashboard_url){
+  document.getElementById("card-done").classList.remove("hidden");
+  var d=document.getElementById("dash");d.textContent=s.result.dashboard_url;d.href=s.result.dashboard_url;
+  document.getElementById("token").textContent=s.result.token||"—";
+  document.getElementById("token-note").textContent=s.result.token_note||"";}
+ }catch(e){}
  setTimeout(poll,1200);}
-async function recheck(){await fetch('/api/checks',{method:'POST'});setTimeout(poll,300);}
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+async function recheck(){await fetch("/api/checks",{method:"POST"});}
 async function start(){
- await fetch('/api/start',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({mode,server_ip:document.getElementById('ip').value,
-   mdns_name:document.getElementById('mdns').value,
-   data_dir:document.getElementById('datadir').value})});poll();}
+ await fetch("/api/start",{method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({mode:mode,server_ip:document.getElementById("ip").value,
+   mdns_name:document.getElementById("mdns").value,
+   data_dir:document.getElementById("datadir").value})});}
 async function dotChecks(){
- const d=await(await fetch('/api/dot-checks',{method:'POST'})).json();
- document.getElementById('dot-checks').innerHTML=d.items.map(i=>
-  `<div class="check"><span>${i.name}</span><span class="${i.ok?'ok':'bad'}">${i.detail||''}</span></div>`).join('');
- document.getElementById('dot-files').innerHTML=d.files.map(f=>
-  `<div class="check"><span>${f.name}<br><small class="sub">${f.why}</small></span><span class="${f.ok?'ok':'bad'}">${f.ok?'✓':'✗'}</span></div>`).join('')||`<span class="sub">—</span>`;}
-async function launch(t){await fetch('/api/launch',{method:'POST',
- headers:{'Content-Type':'application/json'},body:JSON.stringify({target:t})});}
-(async()=>{applyLang();await fetch('/api/checks',{method:'POST'});poll();})();
+ var d=await(await fetch("/api/dot-checks",{method:"POST"})).json();
+ document.getElementById("dot-checks").innerHTML=d.items.map(function(i){
+  return "<div class='check'><span>"+i.name+"</span><span class='"+(i.ok?"ok":"bad")+"'>"+esc(i.detail||"")+"</span></div>";}).join("");
+ document.getElementById("dot-files").innerHTML=d.files.map(function(f){
+  return "<div class='check'><span>"+f.name+"<br><small>"+esc(f.why)+"</small></span><span class='"+(f.ok?"ok":"bad")+"'>"+(f.ok?"✓":"✗")+"</span></div>";}).join("");}
+async function launch(t){await fetch("/api/launch",{method:"POST",
+ headers:{"Content-Type":"application/json"},body:JSON.stringify({target:t})});
+ alert(lang==="de"?"Der Guide wurde in einem neuen Terminalfenster gestartet.":"The guide was launched in a new terminal window.");}
+(async function(){await fetch("/api/checks",{method:"POST"});poll();})();
 </script></body></html>
 """
 
