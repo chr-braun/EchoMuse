@@ -146,6 +146,15 @@ STDERR_TAIL_LINES = 5
 # stderr drain to deliver the last lines before logging without them. Only
 # failure paths pay this; pause/stop and natural end cancel immediately.
 DRAIN_GRACE_S = 0.5
+# A source that has produced nothing for this long is not STALLING, it is
+# DEAD (#150): a starving Music Assistant flow stream never recovers its
+# position (a flow cannot be seeked back to where it stopped), so waiting
+# longer only leaves HA reporting `playing` against silence while the
+# session holds the decoder and the intent state. The stream is ended and
+# reported idle. Generous enough that a slow upstream failover — tens of
+# seconds of SOURCE-stall warnings — still resumes; any successful read
+# resets the clock.
+SOURCE_DEAD_S = 30.0
 
 
 IDLE, PLAYING, PAUSED = "idle", "playing", "paused"
@@ -606,6 +615,7 @@ class MediaSession:
         src_stalls = 0
         stderr_tail = deque(maxlen=STDERR_TAIL_LINES)
         stderr_drain = None
+        src_dead = False
 
         # Arm the data-plane reconnect grace for this feed: a Wi-Fi blip
         # mid-song should cost a pause, not the rest of the track.
@@ -698,7 +708,20 @@ class MediaSession:
                         # Only the READ is timed. The pacing sleep below is
                         # deliberate and must not read as a stall.
                         _t0 = loop.time()
-                        chunk = await proc.stdout.readexactly(SPEAKER_BYTES)
+                        try:
+                            chunk = await asyncio.wait_for(
+                                proc.stdout.readexactly(SPEAKER_BYTES),
+                                SOURCE_DEAD_S)
+                        except asyncio.TimeoutError:
+                            # #150: the read used to have no deadline at all,
+                            # so a source that stopped producing left the feed
+                            # parked forever — silent player log, HA showing
+                            # `playing` indefinitely, decoder held. A stalled
+                            # source is logged upstream; a dead one ends the
+                            # stream here and reports honestly.
+                            src_dead = True
+                            await self._kill_decoder(proc)
+                            break
                         _read_ms = (loop.time() - _t0) * 1000.0
                         if t_first_pcm is None:
                             t_first_pcm = loop.time()
@@ -756,8 +779,15 @@ class MediaSession:
             self.state = IDLE
             self.url = None
             self._pos = 0.0
-            log.info(f"[{self.device_id}] Media finished "
-                     f"({sent // SPEAKER_BYTES} periods)")
+            if src_dead:
+                log.error(
+                    f"[{self.device_id}] Media source produced nothing for "
+                    f"{SOURCE_DEAD_S:.0f}s — ending stream after "
+                    f"{sent // SPEAKER_BYTES} periods. HA reports idle; a "
+                    f"flow stream cannot resume where it died (#150).")
+            else:
+                log.info(f"[{self.device_id}] Media finished "
+                         f"({sent // SPEAKER_BYTES} periods)")
             await self._push_state()
         except asyncio.CancelledError:
             # pause()/stop() tearing us down. Bookmark ≈ what has audibly
